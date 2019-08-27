@@ -16,6 +16,7 @@ export default class extends React.Component {
       pageSize: 10,
       pageNum: 1,
       total: 0,
+      isLoading: false,
       orders: []
     };
   }
@@ -23,15 +24,7 @@ export default class extends React.Component {
     this.login();
   }
   render() {
-    return (
-      <View style={{ flex: 1 }}>
-        <FlatList
-          data={this.state.orders}
-          keyExtractor={this._keyExtractor}
-          renderItem={this.renderListItem}
-        />
-      </View>
-    );
+    return <View style={{ flex: 1 }}>{this.renderList()}</View>;
   }
   _keyExtractor = (e, i) => String(i);
   login = () => {
@@ -60,13 +53,26 @@ export default class extends React.Component {
         }
       });
   };
-
+  renderList = () => {
+    return this.state.isLoading ? (
+      <ActivityIndicator></ActivityIndicator>
+    ) : (
+      <FlatList
+        data={this.state.orders}
+        keyExtractor={this._keyExtractor}
+        renderItem={this.renderListItem}
+      />
+    );
+  };
   fetchOrders = token => {
+    this.setState({
+      isLoading: true
+    });
     fetch("http://47.110.15.39:9080/app/installOrder/list", {
       method: "POST",
       body: `type=1&pageSize=${this.state.pageSize}&pageNum=${this.state.pageNum}`,
       headers: {
-        token: token,
+        token: token || this.state.token,
         "Content-type": "application/x-www-form-urlencoded"
       }
     })
@@ -74,9 +80,11 @@ export default class extends React.Component {
         return response.json();
       })
       .then(info => {
+        let orders = this.state.orders.concat(info.data.list || []);
         this.setState({
           total: info.data.total || 0,
-          orders: info.data.list || []
+          orders: orders,
+          isLoading: false
         });
       });
   };
@@ -98,7 +106,7 @@ export default class extends React.Component {
         </View>
 
         <View style={styles.footer}>
-          <View style={[styles.btnContainer,{borderColor:"#ccc"}]}>
+          <View style={[styles.btnContainer, { borderColor: "#ccc" }]}>
             <Button title="拒绝" color="#ccc" onPress={() => {}}></Button>
           </View>
           <View style={styles.btnContainer}>
